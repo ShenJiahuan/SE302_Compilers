@@ -34,10 +34,10 @@ class Scanner : public ScannerBase {
 };
 
 inline Scanner::Scanner(std::istream &in, std::ostream &out)
-    : ScannerBase(in, out), charPos_(1) {}
+    : ScannerBase(in, out), charPos_(1), commentLevel_(0) {}
 
 inline Scanner::Scanner(std::string const &infile, std::string const &outfile)
-    : ScannerBase(infile, outfile), charPos_(1) {}
+    : ScannerBase(infile, outfile), charPos_(1), commentLevel_(0) {}
 
 inline int Scanner::lex() { return lex__(); }
 
@@ -56,7 +56,20 @@ inline void Scanner::adjust() {
   charPos_ += length();
 }
 
-inline void Scanner::adjustStr() { charPos_ += length(); }
+inline void Scanner::adjustStr() {
+  charPos_ += length();
+}
+
+inline void replace(std::string& str,
+               const std::string& oldStr,
+               const std::string& newStr)
+{
+  std::string::size_type pos = 0u;
+  while((pos = str.find(oldStr, pos)) != std::string::npos){
+     str.replace(pos, oldStr.length(), newStr);
+     pos += newStr.length();
+  }
+}
 
 #endif  // TIGER_LEX_SCANNER_H_
 
