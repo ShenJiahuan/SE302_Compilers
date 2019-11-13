@@ -106,6 +106,7 @@ exp: LET decs IN expseq END {$$ = new A::LetExp(errormsg.tokPos, $2, $4);}
   | INT {$$ = new A::IntExp(errormsg.tokPos, $1);}
   | STRING {$$ = new A::StringExp(errormsg.tokPos, $1);}
   | NIL {$$ = new A::NilExp(errormsg.tokPos);}
+  | BREAK {$$ = new A::BreakExp(errormsg.tokPos);}
   | lvalue {$$ = new A::VarExp(errormsg.tokPos, $1);}
   | lvalue ASSIGN exp {$$ = new A::AssignExp(errormsg.tokPos, $1, $3);}
   | LPAREN sequencing_exps RPAREN {$$ = new A::SeqExp(errormsg.tokPos, $2);}
