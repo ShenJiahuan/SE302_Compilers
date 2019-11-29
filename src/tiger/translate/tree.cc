@@ -23,7 +23,11 @@ void SeqStm::Print(FILE *out, int d) const {
   fprintf(out, "SEQ(\n");
   this->left->Print(out, d + 1);
   fprintf(out, ",\n");
-  this->right->Print(out, d + 1);
+  if (this->right) {
+    this->right->Print(out, d + 1);
+  } else {
+    fprintf(out, "null\n");
+  }
   fprintf(out, ")");
 }
 

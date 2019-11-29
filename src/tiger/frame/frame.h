@@ -9,8 +9,21 @@
 
 namespace F {
 
+class Access;
+class AccessList;
+
 class Frame {
   // Base class
+ public:
+  TEMP::Label *name;
+  AccessList *formals;
+  AccessList *locals;
+  T::StmList *viewShift;
+  int offset;
+  AccessList *getFormals() {
+    return formals;
+  }
+  virtual Access *allocLocal(bool escape) = 0;
 };
 
 class Access {
@@ -70,6 +83,10 @@ class FragList {
 
   FragList(Frag *head, FragList *tail) : head(head), tail(tail) {}
 };
+
+T::Stm *F_procEntryExit1(F::Frame *frame, T::Stm *stm);
+
+AS::Proc *F_procEntryExit3(F::Frame *frame, AS::InstrList *body);
 
 }  // namespace F
 

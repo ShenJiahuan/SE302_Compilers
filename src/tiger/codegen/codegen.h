@@ -7,6 +7,16 @@
 
 namespace CG {
 
+static AS::InstrList *iList = nullptr, *last = nullptr;
+
 AS::InstrList* Codegen(F::Frame* f, T::StmList* stmList);
+
+void munchStm(T::Stm *s);
+
+void munchArgs(T::ExpList *list);
+
+TEMP::TempList *L(TEMP::Temp *head, TEMP::TempList *tail);
+
+TEMP::Temp *munchExp(T::Exp *e);
 }
 #endif

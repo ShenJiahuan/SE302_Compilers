@@ -55,17 +55,17 @@ void do_proc(FILE* out, F::ProcFrag* procFrag) {
 
   AS::Proc* proc = F::F_procEntryExit3(procFrag->frame, allocation.il);
 
-  std::string procName = procFrag->frame->label->Name();
+  std::string procName = procFrag->frame->name->Name();
   fprintf(out, ".globl %s\n", procName.c_str());
   fprintf(out, ".type %s, @function\n", procName.c_str());
   // prologue
-  fprintf(out, "%s", proc->prolog.c_str());
-  // body
-  proc->body->Print(out,
-                    TEMP::Map::LayerMap(temp_map, allocation.coloring));
-  // epilog
-  fprintf(out, "%s", proc->epilog.c_str());
-  fprintf(out, ".size %s, .-%s\n", procName.c_str(), procName.c_str());
+ fprintf(out, "%s", proc->prolog.c_str());
+ // body
+ proc->body->Print(out,
+                   TEMP::Map::LayerMap(temp_map, allocation.coloring));
+//  epilog
+ fprintf(out, "%s", proc->epilog.c_str());
+ fprintf(out, ".size %s, .-%s\n", procName.c_str(), procName.c_str());
 }
 
 void do_str(FILE* out, F::StringFrag* strFrag) {
