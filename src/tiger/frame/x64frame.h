@@ -1,6 +1,8 @@
 #ifndef TIGER_X64FRAME_FRAME_H_
 #define TIGER_X64FRAME_FRAME_H_
 
+#include <vector>
+#include <map>
 #include "frame.h"
 
 namespace F {
@@ -19,14 +21,21 @@ public:
   static TEMP::Temp *RSI();
   static TEMP::Temp *RDI();
   static TEMP::Temp *RBP();
-  static TEMP::Temp *FP();
   static TEMP::Temp *RSP();
   static TEMP::Temp *R8();
   static TEMP::Temp *R9();
   static TEMP::Temp *R10();
   static TEMP::Temp *R11();
+  static TEMP::Temp *R12();
+  static TEMP::Temp *R13();
+  static TEMP::Temp *R14();
+  static TEMP::Temp *R15();
   static T::Exp *exp(F::Access *access, T::Exp *framePtr);
   static T::Exp *externalCall(const std::string &s, T::ExpList *args);
+  static std::vector<TEMP::Temp *> registers();
+  static std::vector<std::string> colors();
+  static const int K = 15;
+  static const std::map<TEMP::Temp *, std::string> regs;
 };
 
 class InFrameAccess : public Access {

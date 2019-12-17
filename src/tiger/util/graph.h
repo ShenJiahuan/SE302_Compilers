@@ -215,10 +215,21 @@ NodeList<T>* NodeList<T>::DeleteNode(Node<T>* a, NodeList<T>* l) {
 
 template <class T>
 NodeList<T>* NodeList<T>::CatList(NodeList<T>* a, NodeList<T>* b) {
-  if (a == nullptr)
-    return b;
-  else
-    return new NodeList<T>(a->head, CatList(a->tail, b));
+  NodeList<T> *result = nullptr;
+  for (NodeList<T> *p = a; p; p = p->tail) {
+    if (result && result->InNodeList(p->head)) {
+      continue;
+    }
+    result = new NodeList<T>(p->head, result);
+  }
+
+  for (NodeList<T> *p = b; p; p = p->tail) {
+    if (result && result->InNodeList(p->head)) {
+      continue;
+    }
+    result = new NodeList<T>(p->head, result);
+  }
+  return result;
 }
 
 /* The type of "tables" mapping graph-nodes to information */

@@ -20,17 +20,7 @@ TEMP::TempList *caller_save() {
 
 static std::string frameName;
 
-AS::InstrList* Codegen(F::Frame* f, T::StmList* stmList) {
-  // TODO: Put your codes here (lab6).
-  frameName = f->name->Name();
-  AS::InstrList *list = nullptr;
-  for (T::StmList *s1 = stmList; s1; s1 = s1->tail) {
-    munchStm(s1->head);
-  }
-  list = iList;
-  iList = last = nullptr;
-  return list;
-}
+TEMP::Temp *rbxsaved, *rbpsaved, *r12saved, *r13saved, *r14saved, *r15saved;
 
 void emit(AS::Instr *instr) {
   if (last) {
@@ -40,60 +30,132 @@ void emit(AS::Instr *instr) {
   }
 }
 
+void saveCalleeRegs() {
+  rbxsaved = TEMP::Temp::NewTemp();
+  rbpsaved = TEMP::Temp::NewTemp();
+  r12saved = TEMP::Temp::NewTemp();
+  r13saved = TEMP::Temp::NewTemp();
+  r14saved = TEMP::Temp::NewTemp();
+  r15saved = TEMP::Temp::NewTemp();
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(rbxsaved, nullptr), new TEMP::TempList(F::X64Frame::RBX(), nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(rbpsaved, nullptr), new TEMP::TempList(F::X64Frame::RBP(), nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(r12saved, nullptr), new TEMP::TempList(F::X64Frame::R12(), nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(r13saved, nullptr), new TEMP::TempList(F::X64Frame::R13(), nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(r14saved, nullptr), new TEMP::TempList(F::X64Frame::R14(), nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(r15saved, nullptr), new TEMP::TempList(F::X64Frame::R15(), nullptr)));
+}
+
+void restoreCalleeRegs() {
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(F::X64Frame::RBX(), nullptr), new TEMP::TempList(rbxsaved, nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(F::X64Frame::RBP(), nullptr), new TEMP::TempList(rbpsaved, nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(F::X64Frame::R12(), nullptr), new TEMP::TempList(r12saved, nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(F::X64Frame::R13(), nullptr), new TEMP::TempList(r13saved, nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(F::X64Frame::R14(), nullptr), new TEMP::TempList(r14saved, nullptr)));
+  emit(new AS::MoveInstr("movq `s0, `d0", new TEMP::TempList(F::X64Frame::R15(), nullptr), new TEMP::TempList(r15saved, nullptr)));
+}
+
+AS::InstrList* Codegen(F::Frame* f, T::StmList* stmList) {
+  frameName = f->name->Name();
+  AS::InstrList *list = nullptr;
+  saveCalleeRegs();
+  for (T::StmList *s1 = stmList; s1; s1 = s1->tail) {
+    munchStm(s1->head);
+  }
+  restoreCalleeRegs();
+  list = iList;
+  iList = last = nullptr;
+  return F::F_procEntryExit2(list);
+}
+
 TEMP::TempList *L(TEMP::Temp *head, TEMP::TempList *tail) {
   return new TEMP::TempList(head, tail);
 }
 
 void munchArgs(T::ExpList *list) {
-    int i = 0;
-    for (T::ExpList *listp = list; listp; listp = listp->tail) {
-      TEMP::Temp *arg = munchExp(listp->head);
-      switch (i) {
-        case 0: {
-          if (arg == F::X64Frame::FP()) {
-            std::stringstream stream;
-            stream << "leaq " << frameName << "_framesize(`s0), `d0";
-            std::string assem = stream.str();
-            emit(new AS::MoveInstr(assem, L(F::X64Frame::RDI(), nullptr), L(F::X64Frame::RSP(), nullptr)));
-          } else {
-            emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RDI(), nullptr), L(arg, nullptr)));
-          }
-          
-          break;
+  int i = 0;
+  for (T::ExpList *listp = list; listp; listp = listp->tail) {
+    TEMP::Temp *arg = munchExp(listp->head);
+    switch (i) {
+      case 0: {
+        if (arg == F::X64Frame::RBP()) {
+          std::stringstream stream;
+          stream << "leaq " << frameName << "_framesize(`s0), `d0";
+          std::string assem = stream.str();
+          emit(new AS::OperInstr(assem, L(F::X64Frame::RDI(), nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
+        } else {
+          emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RDI(), nullptr), L(arg, nullptr)));
         }
-        case 1: {
-          assert(arg != F::X64Frame::FP());
-          emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RSI(), nullptr), L(arg, nullptr)));
-          break;
-        }
-        case 2: {
-          assert(arg != F::X64Frame::FP());
-          emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RDX(), nullptr), L(arg, nullptr)));
-          break;
-        }
-        case 3: {
-          assert(arg != F::X64Frame::FP());
-          emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RCX(), nullptr), L(arg, nullptr)));
-          break;
-        }
-        case 4: {
-          assert(arg != F::X64Frame::FP());
-          emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::R8(), nullptr), L(arg, nullptr)));
-          break;
-        }
-        case 5: {
-          assert(arg != F::X64Frame::FP());
-          emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::R9(), nullptr), L(arg, nullptr)));
-          break;
-        }
-        default: {
-          assert(arg != F::X64Frame::FP());
-          emit(new AS::OperInstr("pushq `s0", nullptr, L(arg, nullptr), nullptr));
-        }
+
+        break;
       }
-      i++;
+      case 1: {
+        assert(arg != F::X64Frame::RBP());
+        emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RSI(), nullptr), L(arg, nullptr)));
+        break;
+      }
+      case 2: {
+        assert(arg != F::X64Frame::RBP());
+        emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RDX(), nullptr), L(arg, nullptr)));
+        break;
+      }
+      case 3: {
+        assert(arg != F::X64Frame::RBP());
+        emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RCX(), nullptr), L(arg, nullptr)));
+        break;
+      }
+      case 4: {
+        assert(arg != F::X64Frame::RBP());
+        emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::R8(), nullptr), L(arg, nullptr)));
+        break;
+      }
+      case 5: {
+        assert(arg != F::X64Frame::RBP());
+        emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::R9(), nullptr), L(arg, nullptr)));
+        break;
+      }
+      default: {
+        assert(arg != F::X64Frame::RBP());
+        emit(new AS::OperInstr("pushq `s0", nullptr, L(arg, nullptr), nullptr));
+      }
     }
+    i++;
   }
+}
+
+TEMP::TempList *param_regs(T::ExpList *list) {
+  int i = 0;
+  TEMP::TempList *result = nullptr;
+  for (T::ExpList *listp = list; listp; listp = listp->tail) {
+    switch (i) {
+      case 0: {
+        result = new TEMP::TempList(F::X64Frame::RDI(), result);
+        break;
+      }
+      case 1: {
+        result = new TEMP::TempList(F::X64Frame::RSI(), result);
+        break;
+      }
+      case 2: {
+        result = new TEMP::TempList(F::X64Frame::RDX(), result);
+        break;
+      }
+      case 3: {
+        result = new TEMP::TempList(F::X64Frame::RCX(), result);
+        break;
+      }
+      case 4: {
+        result = new TEMP::TempList(F::X64Frame::R8(), result);
+        break;
+      }
+      case 5: {
+        result = new TEMP::TempList(F::X64Frame::R9(), result);
+        break;
+      }
+    }
+    i++;
+  }
+  return result;
+}
 
 TEMP::Temp *munchExp(T::Exp *e) {
   switch (e->kind) {
@@ -107,7 +169,7 @@ TEMP::Temp *munchExp(T::Exp *e) {
         /** MEM(BINOP(PLUS, e1, CONST(i))) */
         TEMP::Temp *e1temp = munchExp(e1);
         std::stringstream stream;
-        if (e1temp == F::X64Frame::FP()) {
+        if (e1temp == F::X64Frame::RBP()) {
           stream << "movq (" << frameName << "_framesize" << ((T::ConstExp *) ((T::BinopExp *) memExp->exp)->right)->consti << ")(`s0), `d0";
           std::string assem = stream.str();
           emit(new AS::OperInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
@@ -123,7 +185,7 @@ TEMP::Temp *munchExp(T::Exp *e) {
         /** MEM(BINOP(PLUS, CONST(i), e1)) */
         TEMP::Temp *e1temp = munchExp(e1);
         std::stringstream stream;
-        if (e1temp == F::X64Frame::FP()) {
+        if (e1temp == F::X64Frame::RBP()) {
           stream << "movq (" << frameName << "_framesize" << ((T::ConstExp *) ((T::BinopExp *) memExp->exp)->left)->consti << ")(`s0), `d0";
           std::string assem = stream.str();
           emit(new AS::OperInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
@@ -139,7 +201,7 @@ TEMP::Temp *munchExp(T::Exp *e) {
         T::Exp *e1 = memExp->exp;
         /** MEM(e1) */
         TEMP::Temp *e1temp = munchExp(e1);
-        assert(e1temp != F::X64Frame::FP());
+        assert(e1temp != F::X64Frame::RBP());
         emit(new AS::OperInstr("movq (`s0), `d0", L(r, nullptr), L(e1temp, nullptr), nullptr));
       }
       return r;
@@ -153,11 +215,11 @@ TEMP::Temp *munchExp(T::Exp *e) {
           T::Exp *e2 = binopExp->right;
           TEMP::Temp *e1temp = munchExp(e1);
           TEMP::Temp *e2temp = munchExp(e2);
-          if (e1temp == F::X64Frame::FP()) {
+          if (e1temp == F::X64Frame::RBP()) {
             std::stringstream stream;
             stream << "leaq " << frameName << "_framesize(`s0), `d0";
             std::string assem = stream.str();
-            emit(new AS::MoveInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr)));
+            emit(new AS::OperInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
           } else {
             emit(new AS::MoveInstr("movq `s0, `d0", L(r, nullptr), L(e1temp, nullptr)));
           }
@@ -169,11 +231,11 @@ TEMP::Temp *munchExp(T::Exp *e) {
           T::Exp *e2 = binopExp->right;
           TEMP::Temp *e1temp = munchExp(e1);
           TEMP::Temp *e2temp = munchExp(e2);
-          if (e1temp == F::X64Frame::FP()) {
+          if (e1temp == F::X64Frame::RBP()) {
             std::stringstream stream;
             stream << "leaq " << frameName << "_framesize(`s0), `d0";
             std::string assem = stream.str();
-            emit(new AS::MoveInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr)));
+            emit(new AS::OperInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
           } else {
             emit(new AS::MoveInstr("movq `s0, `d0", L(r, nullptr), L(e1temp, nullptr)));
           }
@@ -185,8 +247,8 @@ TEMP::Temp *munchExp(T::Exp *e) {
           T::Exp *e2 = binopExp->right;
           TEMP::Temp *e1temp = munchExp(e1);
           TEMP::Temp *e2temp = munchExp(e2);
-          assert(e1temp != F::X64Frame::FP());
-          assert(e2temp != F::X64Frame::FP());
+          assert(e1temp != F::X64Frame::RBP());
+          assert(e2temp != F::X64Frame::RBP());
           emit(new AS::MoveInstr("movq `s0, `d0", L(r, nullptr), L(e1temp, nullptr)));
           emit(new AS::OperInstr("imulq `s0, `d0", L(r, nullptr), L(e2temp, L(r, nullptr)), nullptr));
           return r;
@@ -196,8 +258,8 @@ TEMP::Temp *munchExp(T::Exp *e) {
           T::Exp *e2 = binopExp->right;
           TEMP::Temp *e1temp = munchExp(e1);
           TEMP::Temp *e2temp = munchExp(e2);
-          assert(e1temp != F::X64Frame::FP());
-          assert(e2temp != F::X64Frame::FP());
+          assert(e1temp != F::X64Frame::RBP());
+          assert(e2temp != F::X64Frame::RBP());
           emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RAX(), nullptr), L(e1temp, nullptr)));
           emit(new AS::OperInstr("cqo", nullptr, nullptr, nullptr));
           emit(new AS::OperInstr("idivq `s0", L(F::X64Frame::RAX(), nullptr), L(e2temp, nullptr), nullptr));
@@ -233,7 +295,7 @@ TEMP::Temp *munchExp(T::Exp *e) {
       std::string label = TEMP::LabelString(((T::NameExp *) ((T::CallExp *) e)->fun)->name);
       munchArgs(((T::CallExp *) e)->args);
       std::string assem = std::string("callq ") + std::string(label);
-      emit(new AS::OperInstr(assem, nullptr /* TODO: change to caller_save() in lab6 */, nullptr, nullptr));
+      emit(new AS::OperInstr(assem, caller_save(), param_regs(((T::CallExp *) e)->args), nullptr));
       emit(new AS::MoveInstr("movq `s0, `d0", L(r, nullptr), L(F::X64Frame::RAX(), nullptr)));
       return r;
     }
@@ -252,7 +314,7 @@ void munchMoveStm(T::MoveStm *s) {
       TEMP::Temp *e1temp = munchExp(e1);
       TEMP::Temp *e2temp = munchExp(e2);
       std::stringstream stream;
-      if (e1temp == F::X64Frame::FP()) {
+      if (e1temp == F::X64Frame::RBP()) {
         stream << "movq `s0, (" << frameName << "_framesize" << ((T::ConstExp *) ((T::BinopExp *) memDst->exp)->right)->consti << ")(`s1)";
         std::string assem = stream.str();
         emit(new AS::OperInstr(assem, nullptr, L(e2temp, L(F::X64Frame::RSP(), nullptr)), nullptr));
@@ -271,8 +333,8 @@ void munchMoveStm(T::MoveStm *s) {
       std::stringstream stream;
       stream << "movq `s0, " << ((T::ConstExp *) ((T::BinopExp *) memDst->exp)->left)->consti << "(`s1)";
       std::string assem = stream.str();
-      assert(e1temp != F::X64Frame::FP());
-      assert(e2temp != F::X64Frame::FP());
+      assert(e1temp != F::X64Frame::RBP());
+      assert(e2temp != F::X64Frame::RBP());
       emit(new AS::OperInstr(assem, nullptr, L(e2temp, L(e1temp, nullptr)), nullptr));
     } else if (src->kind == T::Exp::Kind::MEM) {
       T::Exp *e1 = memDst->exp, *e2 = ((T::MemExp *) src)->exp;
@@ -280,34 +342,34 @@ void munchMoveStm(T::MoveStm *s) {
       TEMP::Temp *t = TEMP::Temp::NewTemp();
       TEMP::Temp *e1temp = munchExp(e1);
       TEMP::Temp *e2temp = munchExp(e2);
-      assert(e1temp != F::X64Frame::FP());
-      assert(e2temp != F::X64Frame::FP());
+      assert(e1temp != F::X64Frame::RBP());
+      assert(e2temp != F::X64Frame::RBP());
       emit(new AS::OperInstr("movq (`s0), `d0", L(t, nullptr), L(e2temp, nullptr), nullptr));
       emit(new AS::OperInstr("movq `s0, (`s1)", nullptr, L(t, L(e1temp, nullptr)), nullptr));
     } else if (memDst->kind == T::Exp::Kind::CONST) {
       T::Exp *e2 = src;
       /** MOVE(MEM(CONST(i)), e2) */
       TEMP::Temp *e2temp = munchExp(e2);
-      assert(e2temp != F::X64Frame::FP());
+      assert(e2temp != F::X64Frame::RBP());
       emit(new AS::OperInstr("movq (some const), `s0", nullptr, L(e2temp, nullptr), nullptr));
     } else {
       T::Exp *e1 = memDst->exp, *e2 = src;
       /** MOVE(MEM(e1), e2) */
       TEMP::Temp *e1temp = munchExp(e1);
       TEMP::Temp *e2temp = munchExp(e2);
-      assert(e1temp != F::X64Frame::FP());
-      assert(e2temp != F::X64Frame::FP());
+      assert(e1temp != F::X64Frame::RBP());
+      assert(e2temp != F::X64Frame::RBP());
       emit(new AS::OperInstr("movq `s0, (`s1)", nullptr, L(e2temp, L(e1temp, nullptr)), nullptr));
     }
   } else if (dst->kind == T::Exp::Kind::TEMP) {
     T::Exp *e2 = src;
     /** MOVE(TEMP(i), e2) */
     TEMP::Temp *e2temp = munchExp(e2);
-    if (e2temp == F::X64Frame::FP()) {
+    if (e2temp == F::X64Frame::RBP()) {
       std::stringstream stream;
       stream << "movq " << frameName << "_framesize(`s0), `d0";
       std::string assem = stream.str();
-      emit(new AS::MoveInstr(assem, L(((T::TempExp *) dst)->temp, nullptr), L(F::X64Frame::RSP(), nullptr)));
+      emit(new AS::OperInstr(assem, L(((T::TempExp *) dst)->temp, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
     } else {
       emit(new AS::MoveInstr("movq `s0, `d0", L(((T::TempExp *) dst)->temp, nullptr), L(e2temp, nullptr)));
     }

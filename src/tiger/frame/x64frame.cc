@@ -57,7 +57,7 @@ Frame *X64Frame::newFrame(TEMP::Label *name, U::BoolList *escapes) {
   for (AccessList *accessPtr = frame->formals; accessPtr; accessPtr = accessPtr->tail) {
     Access *access = accessPtr->head;
     if (access->kind == Access::INFRAME) {
-      T::Exp *dstExp = new T::MemExp(new T::BinopExp(T::PLUS_OP, new T::TempExp(F::X64Frame::FP()), new T::ConstExp(((F::InFrameAccess *) access)->offset)));
+      T::Exp *dstExp = new T::MemExp(new T::BinopExp(T::PLUS_OP, new T::TempExp(F::X64Frame::RBP()), new T::ConstExp(((F::InFrameAccess *) access)->offset)));
       T::Stm *stm;
       switch (i) {
         case 0: {
@@ -126,14 +126,15 @@ static TEMP::Temp *r10 = nullptr;
 
 static TEMP::Temp *r11 = nullptr;
 
-static TEMP::Temp *rbx = nullptr;
+static TEMP::Temp *r12 = nullptr;
 
-TEMP::Temp *X64Frame::FP() {
-  if (!rbp) {
-    rbp = TEMP::Temp::NewTemp();
-  }
-  return rbp;
-}
+static TEMP::Temp *r13 = nullptr;
+
+static TEMP::Temp *r14 = nullptr;
+
+static TEMP::Temp *r15 = nullptr;
+
+static TEMP::Temp *rbx = nullptr;
 
 TEMP::Temp *X64Frame::RSP() {
   if (!rsp) {
@@ -212,6 +213,34 @@ TEMP::Temp *X64Frame::R11() {
   return r11;
 }
 
+TEMP::Temp *X64Frame::R12() {
+  if (!r12) {
+    r12 = TEMP::Temp::NewTemp();
+  }
+  return r12;
+}
+
+TEMP::Temp *X64Frame::R13() {
+  if (!r13) {
+    r13 = TEMP::Temp::NewTemp();
+  }
+  return r13;
+}
+
+TEMP::Temp *X64Frame::R14() {
+  if (!r14) {
+    r14 = TEMP::Temp::NewTemp();
+  }
+  return r14;
+}
+
+TEMP::Temp *X64Frame::R15() {
+  if (!r15) {
+    r15 = TEMP::Temp::NewTemp();
+  }
+  return r15;
+}
+
 TEMP::Temp *X64Frame::RBX() {
   if (!rbx) {
     rbx = TEMP::Temp::NewTemp();
@@ -222,11 +251,36 @@ TEMP::Temp *X64Frame::RBX() {
 T::Exp *X64Frame::exp(F::Access *access, T::Exp *framePtr) {
   if (access->kind == F::Access::INFRAME) {
     return new T::MemExp(new T::BinopExp(T::PLUS_OP, framePtr, new T::ConstExp(((InFrameAccess *) access)->offset)));
+  } else {
+    return new T::TempExp(((F::InRegAccess *) access)->reg);
   }
 }
 
 T::Exp *X64Frame::externalCall(const std::string &s, T::ExpList *args) {
   return new T::CallExp(new T::NameExp(TEMP::NamedLabel(s)), args);
+}
+
+const std::map<TEMP::Temp *, std::string> X64Frame::regs = {
+        {RAX(), "%rax"}, {RBX(), "%rbx"}, {RCX(), "%rcx"}, {RDX(), "%rdx"},
+        {RSI(), "%rsi"}, {RDI(), "%rdi"}, {RBP(), "%rbp"}, /* {RSP(), "%rsp"}, */
+        {R8(), "%r8"}, {R9(), "%r9"}, {R10(), "%r10"}, {R11(), "%r11"},
+        {R12(), "%r12"}, {R13(), "%r13"}, {R14(), "%r14"}, {R15(), "%r15"}
+};
+
+std::vector<TEMP::Temp *> X64Frame::registers() {
+  std::vector<TEMP::Temp *> result;
+  for (const auto &each : regs) {
+    result.push_back(each.first);
+  }
+  return result;
+}
+
+std::vector<std::string> X64Frame::colors() {
+  std::vector<std::string> result;
+  for (const auto &each : regs) {
+    result.push_back(each.second);
+  }
+  return result;
 }
 
 T::Stm *F_procEntryExit1(F::Frame *frame, T::Stm *stm) {
@@ -235,6 +289,13 @@ T::Stm *F_procEntryExit1(F::Frame *frame, T::Stm *stm) {
     result = new T::SeqStm(viewShiftPtr->head, result);
   }
   return result;
+}
+
+AS::InstrList *F_procEntryExit2(AS::InstrList *body) {
+  return AS::InstrList::Splice(
+    body, 
+    new AS::InstrList(
+      new AS::OperInstr("", new TEMP::TempList(F::X64Frame::RAX(), new TEMP::TempList(F::X64Frame::RSP(), nullptr)), nullptr, nullptr), nullptr));
 }
 
 AS::Proc *F_procEntryExit3(F::Frame *frame, AS::InstrList *body) {

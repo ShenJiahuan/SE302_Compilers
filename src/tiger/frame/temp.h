@@ -45,6 +45,10 @@ class TempList {
   TempList *tail;
 
   TempList(Temp *h, TempList *t) : head(h), tail(t) {}
+
+  bool contains(Temp *temp);
+
+  void replace(Temp *oldTemp, Temp *newTemp);
 };
 
 class LabelList {

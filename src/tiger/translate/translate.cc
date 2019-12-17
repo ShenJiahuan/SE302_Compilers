@@ -242,7 +242,7 @@ TR::Access *allocLocal(TR::Level *level, bool escape) {
 }
 
 TR::Exp *simpleVar(TR::Access *access, TR::Level *level) {
-  T::Exp *frame = new T::TempExp(F::X64Frame::FP());
+  T::Exp *frame = new T::TempExp(F::X64Frame::RBP());
   while (level != access->level) {
     frame = new T::MemExp(new T::BinopExp(T::PLUS_OP, frame, new T::ConstExp(-F::X64Frame::wordSize)));
     level = level->parent;
@@ -307,7 +307,7 @@ TR::Exp *assign(TR::Exp *lhs, TR::Exp *rhs) {
 }
 
 TR::Exp *call(TEMP::Label *label, std::vector<TR::Exp *> expList, TR::Level *caller, TR::Level *callee) {
-  T::Exp *staticLink = new T::TempExp(F::X64Frame::FP());
+  T::Exp *staticLink = new T::TempExp(F::X64Frame::RBP());
   while (caller != callee->parent) {
     staticLink = new T::MemExp(new T::BinopExp(T::MINUS_OP, staticLink, new T::ConstExp(F::X64Frame::wordSize)));
     caller = caller->parent;
@@ -391,7 +391,7 @@ TR::Exp *while_(TR::Exp *test, TR::Exp *body, TEMP::Label *doneLabel) {
 
 TR::Exp *for_(F::Access *access, TR::Exp *lo, TR::Exp *hi, TR::Exp *body, TEMP::Label *doneLabel) {
   TEMP::Label *bodyLabel = TEMP::NewLabel(), *testLabel = TEMP::NewLabel();
-  T::Exp *i = F::X64Frame::exp(access, new T::TempExp(F::X64Frame::FP()));
+  T::Exp *i = F::X64Frame::exp(access, new T::TempExp(F::X64Frame::RBP()));
   return new TR::NxExp(
       new T::SeqStm(new T::MoveStm(i, lo->UnEx()),
       new T::SeqStm(new T::LabelStm(testLabel),
@@ -869,7 +869,7 @@ TR::Exp *VarDec::Translate(S::Table<E::EnvEntry> *venv, S::Table<TY::Ty> *tenv,
   if (this->typ && tenv->Look(this->typ)->ActualTy() != initTy && initTy->kind != TY::Ty::Kind::NIL) {
     errormsg.Error(this->pos, "type mismatch");
   }
-  TR::Access *access = TR::allocLocal(level, true);
+  TR::Access *access = TR::allocLocal(level, this->escape);
   venv->Enter(this->var, new E::VarEntry(access, initTy));
   return new TR::NxExp(new T::MoveStm(TR::simpleVar(access, level)->UnEx(), init.exp->UnEx()));
 }

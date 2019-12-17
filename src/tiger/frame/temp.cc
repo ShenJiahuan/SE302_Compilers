@@ -38,6 +38,23 @@ Temp *Temp::NewTemp() {
 
 int Temp::Int() { return this->num; }
 
+bool TempList::contains(Temp *temp) {
+  for (TempList *p = this; p; p = p->tail) {
+    if (p->head == temp) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void TempList::replace(Temp *oldTemp, Temp *newTemp) {
+  for (TempList *p = this; p; p = p->tail) {
+    if (p->head == oldTemp) {
+      p->head = newTemp;
+    }
+  }
+}
+
 Map *Map::Empty() { return new Map(); }
 
 Map *Map::Name() {

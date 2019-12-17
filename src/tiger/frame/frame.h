@@ -86,6 +86,8 @@ class FragList {
 
 T::Stm *F_procEntryExit1(F::Frame *frame, T::Stm *stm);
 
+AS::InstrList *F_procEntryExit2(AS::InstrList *body);
+
 AS::Proc *F_procEntryExit3(F::Frame *frame, AS::InstrList *body);
 
 }  // namespace F
