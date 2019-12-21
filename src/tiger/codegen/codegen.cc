@@ -115,7 +115,10 @@ void munchArgs(T::ExpList *list) {
       }
       default: {
         assert(arg != F::X64Frame::RBP());
-        emit(new AS::OperInstr("pushq `s0", nullptr, L(arg, nullptr), nullptr));
+        std::stringstream stream;
+        stream << "movq `s0, " << (i - 6) * F::X64Frame::wordSize << "(`s1)";
+        std::string assem = stream.str();
+        emit(new AS::OperInstr(assem, nullptr, L(arg, L(F::X64Frame::RSP(), nullptr)), nullptr));
       }
     }
     i++;
@@ -170,7 +173,7 @@ TEMP::Temp *munchExp(T::Exp *e) {
         TEMP::Temp *e1temp = munchExp(e1);
         std::stringstream stream;
         if (e1temp == F::X64Frame::RBP()) {
-          stream << "movq (" << frameName << "_framesize" << ((T::ConstExp *) ((T::BinopExp *) memExp->exp)->right)->consti << ")(`s0), `d0";
+          stream << "movq (" << frameName << "_framesize+" << ((T::ConstExp *) ((T::BinopExp *) memExp->exp)->right)->consti << ")(`s0), `d0";
           std::string assem = stream.str();
           emit(new AS::OperInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
         } else {
@@ -186,7 +189,7 @@ TEMP::Temp *munchExp(T::Exp *e) {
         TEMP::Temp *e1temp = munchExp(e1);
         std::stringstream stream;
         if (e1temp == F::X64Frame::RBP()) {
-          stream << "movq (" << frameName << "_framesize" << ((T::ConstExp *) ((T::BinopExp *) memExp->exp)->left)->consti << ")(`s0), `d0";
+          stream << "movq (" << frameName << "_framesize+" << ((T::ConstExp *) ((T::BinopExp *) memExp->exp)->left)->consti << ")(`s0), `d0";
           std::string assem = stream.str();
           emit(new AS::OperInstr(assem, L(r, nullptr), L(F::X64Frame::RSP(), nullptr), nullptr));
         } else {

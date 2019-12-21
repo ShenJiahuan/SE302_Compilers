@@ -20,6 +20,7 @@ class Frame {
   AccessList *locals;
   T::StmList *viewShift;
   int offset;
+  int maxArgs = 0;
   AccessList *getFormals() {
     return formals;
   }

@@ -85,7 +85,7 @@ Frame *X64Frame::newFrame(TEMP::Label *name, U::BoolList *escapes) {
           break;
         }
         default: {
-          // TODO: support more than 6 args
+          stm = new T::MoveStm(dstExp, new T::MemExp(new T::BinopExp(T::BinOp::PLUS_OP, new T::TempExp(F::X64Frame::RBP()), new T::ConstExp((i + 1 - 6) * F::X64Frame::wordSize))));
           break;
         }
       }
@@ -300,9 +300,10 @@ AS::InstrList *F_procEntryExit2(AS::InstrList *body) {
 
 AS::Proc *F_procEntryExit3(F::Frame *frame, AS::InstrList *body) {
   std::string prologue = frame->name->Name() + ":\n";
-  prologue += ".set " + frame->name->Name() + "_framesize, " + std::to_string(-frame->offset) + "\n";
-  prologue += "subq $" + std::to_string(-frame->offset) + ", %rsp\n";
-  std::string epilog = "addq $" + std::to_string(-frame->offset) + ", %rsp\nretq\n";
+  int extraStack = std::max(frame->maxArgs - 6, 0) * F::X64Frame::wordSize;
+  prologue += ".set " + frame->name->Name() + "_framesize, " + std::to_string(-frame->offset + extraStack) + "\n";
+  prologue += "subq $" + std::to_string(-frame->offset + extraStack) + ", %rsp\n";
+  std::string epilog = "addq $" + std::to_string(-frame->offset + extraStack) + ", %rsp\nretq\n";
   return new AS::Proc(prologue, body, epilog);
 }
 

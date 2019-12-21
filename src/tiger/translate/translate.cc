@@ -308,9 +308,10 @@ TR::Exp *assign(TR::Exp *lhs, TR::Exp *rhs) {
 
 TR::Exp *call(TEMP::Label *label, std::vector<TR::Exp *> expList, TR::Level *caller, TR::Level *callee) {
   T::Exp *staticLink = new T::TempExp(F::X64Frame::RBP());
-  while (caller != callee->parent) {
+  TR::Level *levelp = caller;
+  while (levelp != callee->parent) {
     staticLink = new T::MemExp(new T::BinopExp(T::MINUS_OP, staticLink, new T::ConstExp(F::X64Frame::wordSize)));
-    caller = caller->parent;
+    levelp = levelp->parent;
   }
 
   T::ExpList *list = nullptr;
@@ -326,15 +327,16 @@ TR::Exp *call(TEMP::Label *label, std::vector<TR::Exp *> expList, TR::Level *cal
   }
   if (callee->parent) {
     list = new T::ExpList(staticLink, list);
+    caller->frame->maxArgs = std::max(caller->frame->maxArgs, (int) expList.size() + 1);
     return new TR::ExExp(new T::CallExp(new T::NameExp(label), list));
   } else {
+    caller->frame->maxArgs = std::max(caller->frame->maxArgs, (int) expList.size());
     return new TR::ExExp(F::X64Frame::externalCall(TEMP::LabelString(label), list));
   }
 }
 
 TR::Exp *string(const std::string &str) {
   TEMP::Label *label = TEMP::NewLabel();
-  // TODO: add frag
   frags = new F::FragList(new F::StringFrag(label, str), frags);
   return new TR::ExExp(new T::NameExp(label));
 }
