@@ -345,7 +345,7 @@ AS::InstrList *RewriteProgram(F::Frame *f, AS::InstrList *il) {
         src->replace(spilledTemp, newTemp);
         dst->replace(spilledTemp, newTemp);
         std::stringstream stream;
-        stream << "movq (" << f->name << "_framesize" << f->offset << ")(`s0), `s1";
+        stream << "movq (" << f->name->Name() << "_framesize" << f->offset << ")(`s0), `d0";
         std::string assem = stream.str();
         newIl = AS::InstrList::Splice(newIl, new AS::InstrList(new AS::OperInstr(assem, new TEMP::TempList(newTemp, nullptr), new TEMP::TempList(F::X64Frame::RSP(), nullptr), nullptr), nullptr));
         newIl = AS::InstrList::Splice(newIl, new AS::InstrList(p->head, nullptr));
@@ -358,9 +358,9 @@ AS::InstrList *RewriteProgram(F::Frame *f, AS::InstrList *il) {
         noSpillTemp.insert(newTemp);
         src->replace(spilledTemp, newTemp);
         std::stringstream stream;
-        stream << "movq (" << f->name->Name() << "_framesize" << f->offset << ")(`s0), `s1";
+        stream << "movq (" << f->name->Name() << "_framesize" << f->offset << ")(`s0), `d0";
         std::string assem = stream.str();
-        newIl = AS::InstrList::Splice(newIl, new AS::InstrList(new AS::OperInstr(assem, nullptr, new TEMP::TempList(F::X64Frame::RSP(), new TEMP::TempList(newTemp, nullptr)), nullptr), nullptr));
+        newIl = AS::InstrList::Splice(newIl, new AS::InstrList(new AS::OperInstr(assem, new TEMP::TempList(newTemp, nullptr), new TEMP::TempList(F::X64Frame::RSP(), nullptr), nullptr), nullptr));
         newIl = AS::InstrList::Splice(newIl, new AS::InstrList(p->head, nullptr));
       } else if (dst && dst->contains(spilledTemp)) {
         TEMP::Temp *newTemp = TEMP::Temp::NewTemp();

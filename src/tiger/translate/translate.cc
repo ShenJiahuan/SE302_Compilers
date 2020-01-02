@@ -813,14 +813,16 @@ TR::Exp *FunctionDec::Translate(S::Table<E::EnvEntry> *venv,
     TEMP::Label *name = TEMP::NamedLabel(head->name->Name());
     U::BoolList *args = nullptr;
     U::BoolList *argPtr = nullptr;
+    A::FieldList *fieldPtr = head->params;
     for (TY::TyList *tyPtr = formalTyList; tyPtr; tyPtr = tyPtr->tail) {
-      U::BoolList *arg = new U::BoolList(true, nullptr);
+      U::BoolList *arg = new U::BoolList(fieldPtr->head->escape, nullptr);
       if (args == nullptr) {
         args = argPtr = arg;
       } else {
         argPtr->tail = arg;
         argPtr = arg;
       }
+      fieldPtr = fieldPtr->tail;
     }
 
     TR::Level *newLevel = TR::Level::NewLevel(level, name, args);

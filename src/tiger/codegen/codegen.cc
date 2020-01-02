@@ -264,8 +264,8 @@ TEMP::Temp *munchExp(T::Exp *e) {
           assert(e1temp != F::X64Frame::RBP());
           assert(e2temp != F::X64Frame::RBP());
           emit(new AS::MoveInstr("movq `s0, `d0", L(F::X64Frame::RAX(), nullptr), L(e1temp, nullptr)));
-          emit(new AS::OperInstr("cqo", nullptr, nullptr, nullptr));
-          emit(new AS::OperInstr("idivq `s0", L(F::X64Frame::RAX(), nullptr), L(e2temp, nullptr), nullptr));
+          emit(new AS::OperInstr("cqo", L(F::X64Frame::RDX(), L(F::X64Frame::RAX(), nullptr)), L(F::X64Frame::RAX(), nullptr), nullptr));
+          emit(new AS::OperInstr("idivq `s0", L(F::X64Frame::RDX(), L(F::X64Frame::RAX(), nullptr)), L(e2temp, nullptr), nullptr));
           emit(new AS::MoveInstr("movq `s0, `d0", L(r, nullptr), L(F::X64Frame::RAX(), nullptr)));
           return r;
         }

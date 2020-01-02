@@ -4,7 +4,7 @@
 
 extern int tigermain();
 
-long *initArray(int size, int init) {
+long *initArray(int size, long init) {
   int i;
   long *a = (long *)malloc(size * sizeof(long));
   for (i = 0; i < size; i++) a[i] = init;

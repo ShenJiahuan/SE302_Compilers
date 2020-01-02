@@ -56,50 +56,51 @@ Frame *X64Frame::newFrame(TEMP::Label *name, U::BoolList *escapes) {
   int i = 0;
   for (AccessList *accessPtr = frame->formals; accessPtr; accessPtr = accessPtr->tail) {
     Access *access = accessPtr->head;
+    T::Exp *dstExp;
     if (access->kind == Access::INFRAME) {
-      T::Exp *dstExp = new T::MemExp(new T::BinopExp(T::PLUS_OP, new T::TempExp(F::X64Frame::RBP()), new T::ConstExp(((F::InFrameAccess *) access)->offset)));
-      T::Stm *stm;
-      switch (i) {
-        case 0: {
-          stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RDI()));
-          break;
-        }
-        case 1: {
-          stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RSI()));
-          break;
-        }
-        case 2: {
-          stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RDX()));
-          break;
-        }
-        case 3: {
-          stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RCX()));
-          break;
-        }
-        case 4: {
-          stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::R8()));
-          break;
-        }
-        case 5: {
-          stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::R9()));
-          break;
-        }
-        default: {
-          stm = new T::MoveStm(dstExp, new T::MemExp(new T::BinopExp(T::BinOp::PLUS_OP, new T::TempExp(F::X64Frame::RBP()), new T::ConstExp((i + 1 - 6) * F::X64Frame::wordSize))));
-          break;
-        }
-      }
-//      frame->offset -= wordSize;
-      if (frame->viewShift == nullptr) {
-        frame->viewShift = viewShiftPtr = new T::StmList(stm, nullptr);
-      } else {
-        viewShiftPtr->tail = new T::StmList(stm, nullptr);
-        viewShiftPtr = viewShiftPtr->tail;
-      }
-      i++;
+      dstExp = new T::MemExp(new T::BinopExp(T::PLUS_OP, new T::TempExp(F::X64Frame::RBP()), new T::ConstExp(((F::InFrameAccess *) access)->offset)));
     } else {
-      // TODO: handle in reg access
+      dstExp = new T::TempExp(((F::InRegAccess *) access)->reg);
     }
+    T::Stm *stm;
+    switch (i) {
+      case 0: {
+        stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RDI()));
+        break;
+      }
+      case 1: {
+        stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RSI()));
+        break;
+      }
+      case 2: {
+        stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RDX()));
+        break;
+      }
+      case 3: {
+        stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::RCX()));
+        break;
+      }
+      case 4: {
+        stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::R8()));
+        break;
+      }
+      case 5: {
+        stm = new T::MoveStm(dstExp, new T::TempExp(F::X64Frame::R9()));
+        break;
+      }
+      default: {
+        stm = new T::MoveStm(dstExp, new T::MemExp(new T::BinopExp(T::BinOp::PLUS_OP, new T::TempExp(F::X64Frame::RBP()), new T::ConstExp((i + 1 - 6) * F::X64Frame::wordSize))));
+        break;
+      }
+    }
+//      frame->offset -= wordSize;
+    if (frame->viewShift == nullptr) {
+      frame->viewShift = viewShiftPtr = new T::StmList(stm, nullptr);
+    } else {
+      viewShiftPtr->tail = new T::StmList(stm, nullptr);
+      viewShiftPtr = viewShiftPtr->tail;
+    }
+    i++;
   }
   return frame;
 }
